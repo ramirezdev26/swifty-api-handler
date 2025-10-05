@@ -3,16 +3,16 @@
   "version": "1.0.0",
   "description": "Swifty API - A Node.js API project",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "prepare": "[ -n \"$CI\" ] || husky install",
-    "test": "jest --coverage",
-    "test:watch": "jest --watch",
-    "build": "npm run lint && npm test"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch"
   },
   "keywords": [
     "api",
@@ -29,6 +29,7 @@
     "pino": "^10.0.0"
   },
   "devDependencies": {
+    "@jest/globals": "^30.2.0",
     "@types/jest": "^30.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",

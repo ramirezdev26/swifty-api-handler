@@ -13,7 +13,4 @@ const add = (a, b) => a + b;
  */
 const greet = (name) => `Hello, ${name}!`;
 
-module.exports = {
-  add,
-  greet,
-};
+export { add, greet };

@@ -1,5 +1,5 @@
 /* eslint-env jest */
-const { add, greet } = require('../utils');
+import { add, greet } from '../utils.js';
 
 describe('Utility Functions', () => {
   describe('add', () => {
