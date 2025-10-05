@@ -56,12 +56,14 @@ test:
   stage: test
   image: node:18
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
+    key: ${CI_COMMIT_REF_SLUG}-test
     paths:
       - node_modules/
-  script:
-    - npm ci
+    policy: pull-push
+  before_script:
+    - npm ci --prefer-offline
     - npm install --save-dev jest ts-jest @types/jest @types/node
+  script:
     - npm test
   artifacts:
     when: always
