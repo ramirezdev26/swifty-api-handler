@@ -161,12 +161,4 @@ deploy_production:
   only:
     - main
   when: manual
-
-# Pipeline rules to ensure required checks pass before merge
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: always
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: always
-    - when: never
+  
