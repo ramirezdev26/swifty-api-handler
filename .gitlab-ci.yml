@@ -52,21 +52,30 @@ build:
 # Test Stage
 test:
   stage: test
-  script:
-    - npm ci --prefer-offline --no-audit --no-fund
-    - npm install --save-dev jest-junit
+  dependencies: []                   # don't download artifacts from earlier jobs
+  variables:
+    JEST_JUNIT_OUTPUT_DIR: "test-reports"
+    JEST_JUNIT_OUTPUT_NAME: "junit.xml"
+  before_script:
+    - rm -rf .cov coverage test-reports || true
     - mkdir -p test-reports
-    - npm test -- --ci --coverage --coverageReporters="json" --reporters=default --reporters=jest-junit --testResultsProcessor="jest-junit" --outputFile="test-reports/junit.xml"
+    - npm ci --prefer-offline --no-audit --no-fund
+  script:
+    # Use reporters that generate only what's needed (no HTML)
+    - npm test -- --ci \
+        --coverage \
+        --coverageDirectory=.cov \
+        --coverageReporters=cobertura \
+        --coverageReporters=json-summary \
+        --reporters=default \
+        --reporters=jest-junit
   artifacts:
     when: always
-    paths:
-      - coverage/
-      - test-reports/
     reports:
       junit: test-reports/junit.xml
       coverage_report:
         coverage_format: cobertura
-        path: coverage/coverage-final.json
+        path: .cov/cobertura-coverage.xml   # <-- small single file
     expire_in: 1 week
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
 
