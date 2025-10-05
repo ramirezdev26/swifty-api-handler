@@ -57,8 +57,8 @@ test:
     JEST_JUNIT_OUTPUT_DIR: "test-reports"
     JEST_JUNIT_OUTPUT_NAME: "junit.xml"
   before_script:
-    - rm -rf .cov coverage test-reports || true
-    - mkdir -p test-reports .cov
+    - rm -rf .cov test-reports || true
+    - mkdir -p .cov test-reports
     - npm ci --prefer-offline --no-audit --no-fund
   script:
     - |
@@ -66,6 +66,7 @@ test:
         --coverage --coverageDirectory=.cov \
         --coverageReporters=cobertura \
         --reporters=default --reporters=jest-junit
+    # tiny fallbacks so artifact upload is instant even if Jest writes nothing
     - '[ -f test-reports/junit.xml ] || echo "<?xml version=\"1.0\"?><testsuites name=\"empty\" tests=\"0\" failures=\"0\"/>" > test-reports/junit.xml'
     - '[ -f .cov/cobertura-coverage.xml ] || echo "<?xml version=\"1.0\"?><coverage lines-valid=\"0\" lines-covered=\"0\" line-rate=\"0\" version=\"0\"/>" > .cov/cobertura-coverage.xml'
   artifacts:
