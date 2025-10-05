@@ -10,71 +10,61 @@ stages:
 
 variables:
   NODE_ENV: test
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"  # use local npm cache between jobs
   DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
   DOCKER_HOST: tcp://docker:2376
   DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_TLS_VERIFY: 1
   DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
 
-# Global cache configuration
+# Cache the npm *cache* (not node_modules) keyed by lockfile
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - package-lock.json
   paths:
-    - node_modules/
-  # Use pull-push policy to share cache between jobs
-  policy: pull-push
-  # Enable fallback to default key if specific key not found
+    - .npm/
+  policy: pull
   fallback_keys:
     - ${CI_DEFAULT_BRANCH}
 
-# Lint Stage
+# Lint Stage (populate cache once)
 lint:
   stage: lint
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-    policy: pull-push
+    policy: pull-push       # first job pushes cache for others
+  # IMPORTANT: eslint/prettier should already be in devDependencies; don't install with --save-dev here
   script:
-    - npm ci
-    - npm install --save-dev eslint prettier eslint-config-prettier eslint-plugin-prettier
-    - npx eslint --ext .js . --fix
-    - npx prettier --write .
-  artifacts:
-    paths:
-      - node_modules/
-    expire_in: 1 hour
+    - npm ci --prefer-offline --no-audit --no-fund
+    - npx eslint --ext .js,.jsx,.ts,.tsx . --max-warnings=0
+    - npx prettier -c .
+  # no node_modules artifacts!
+  # If you need a report, publish only the report file, not node_modules.
+  # artifacts:
+  #   reports:
+  #     codequality: gl-code-quality-report.json
 
 # Build Stage
 build:
   stage: build
-  dependencies:
-    - lint
+  needs: []                 # run in parallel with lint
+  dependencies: []          # <-- prevents "Downloading artifacts for lint ..."
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-    policy: pull-push
+    policy: pull
   script:
-    - npm ci --only=production --prefer-offline --no-audit
-  artifacts:
-    paths:
-      - node_modules/
-    expire_in: 1 hour
+    - npm ci --only=production --prefer-offline --no-audit --no-fund
+    - npm run build
+  # no node_modules artifacts
 
 # Test Stage
 test:
   stage: test
-  dependencies:
-    - build
+  needs: []                 # (optional) let it start when its turn comes
+  dependencies: []          # don't pull build artifacts
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-    policy: pull-push
-  before_script:
-    - npm ci --prefer-offline
+    policy: pull
   script:
+    - npm ci --prefer-offline --no-audit --no-fund
     - npm test
   artifacts:
     when: always
@@ -88,15 +78,11 @@ test:
 # Security Check
 security:
   stage: security
-  dependencies:
-    - test
+  dependencies: []
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-    policy: pull-push
+    policy: pull
   script:
-    - npm ci --production
+    - npm ci --production --prefer-offline --no-audit --no-fund
     - npm audit --production --audit-level=high
   only:
     - merge_requests
@@ -106,8 +92,6 @@ security:
 # Package Stage
 package:
   stage: package
-  dependencies:
-    - security
   image: docker:stable
   services:
     - docker:stable-dind
@@ -152,11 +136,9 @@ stop_preview:
     name: preview/$CI_COMMIT_REF_SLUG
     action: stop
 
-# Deploy to Staging Environment
 deploy_staging:
   stage: deploy
-  dependencies:
-    - package
+  dependencies: []
   image: alpine:latest
   environment:
     name: staging
@@ -169,11 +151,9 @@ deploy_staging:
   when: manual
   needs: ["package"]
 
-# Deploy to Production Environment
 deploy_production:
   stage: deploy
-  dependencies:
-    - deploy_staging
+  dependencies: []
   image: alpine:latest
   environment:
     name: production
@@ -186,10 +166,8 @@ deploy_production:
   when: manual
   needs: ["deploy_staging"]
 
-# Pipeline workflow rules
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG
-  
