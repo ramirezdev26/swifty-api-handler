@@ -52,24 +52,21 @@ build:
 # Test Stage
 test:
   stage: test
-  needs: []
-  dependencies: []
-  cache:
-    policy: pull
   script:
     - npm ci --prefer-offline --no-audit --no-fund
+    - npm install --save-dev jest-junit
     - mkdir -p test-reports
-    - NODE_ENV=test npx jest --ci --reporters=default --reporters=jest-junit --coverage --coverageReporters="cobertura" --testResultsProcessor="jest-junit"
+    - npm test -- --ci --coverage --coverageReporters="json" --reporters=default --reporters=jest-junit --testResultsProcessor="jest-junit" --outputFile="test-reports/junit.xml"
   artifacts:
     when: always
+    paths:
+      - coverage/
+      - test-reports/
     reports:
       junit: test-reports/junit.xml
       coverage_report:
         coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
-    paths:
-      - coverage/
-      - test-reports/
+        path: coverage/coverage-final.json
     expire_in: 1 week
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
 
