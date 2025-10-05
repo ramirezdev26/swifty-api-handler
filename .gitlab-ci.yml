@@ -15,22 +15,26 @@ variables:
   DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_TLS_VERIFY: 1
   DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-  DOCKER_DRIVER: overlay2
 
 # Global cache configuration
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - node_modules/
+  # Use pull-push policy to share cache between jobs
   policy: pull-push
+  # Enable fallback to default key if specific key not found
+  fallback_keys:
+    - ${CI_DEFAULT_BRANCH}
 
 # Lint Stage
 lint:
   stage: lint
   cache:
-    key: ${CI_COMMIT_REF_SLUG}-lint
+    key: ${CI_COMMIT_REF_SLUG}
     paths:
       - node_modules/
+    policy: pull-push
   script:
     - npm ci
     - npm install --save-dev eslint prettier eslint-config-prettier eslint-plugin-prettier
@@ -47,9 +51,10 @@ build:
   dependencies:
     - lint
   cache:
-    key: ${CI_COMMIT_REF_SLUG}-prod
+    key: ${CI_COMMIT_REF_SLUG}
     paths:
       - node_modules/
+    policy: pull-push
   script:
     - npm ci --only=production --prefer-offline --no-audit
   artifacts:
@@ -63,9 +68,10 @@ test:
   dependencies:
     - build
   cache:
-    key: ${CI_COMMIT_REF_SLUG}-test
+    key: ${CI_COMMIT_REF_SLUG}
     paths:
       - node_modules/
+    policy: pull-push
   before_script:
     - npm ci --prefer-offline
   script:
@@ -85,9 +91,10 @@ security:
   dependencies:
     - test
   cache:
-    key: ${CI_COMMIT_REF_SLUG}-security
+    key: ${CI_COMMIT_REF_SLUG}
     paths:
       - node_modules/
+    policy: pull-push
   script:
     - npm ci --production
     - npm audit --production --audit-level=high
@@ -111,6 +118,7 @@ package:
     - docker push $DOCKER_IMAGE
   only:
     - main
+    - develop
   when: manual
 
 # Deploy to Preview Environment
