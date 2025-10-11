@@ -5,13 +5,10 @@ export class AuthMiddleware {
   static async verifyToken(req, res, next) {
     try {
       const token = AuthMiddleware.extractToken(req);
-      console.log('Token received:', token);
 
       const decodedToken = await auth.verifyIdToken(token);
-      console.log('Decoded token:', decodedToken);
 
       req.user = AuthMiddleware.buildUser(decodedToken);
-      console.log('Built user:', req.user);
       next();
     } catch (error) {
       const message = error instanceof AppError ? error.message : 'Invalid or expired token';
