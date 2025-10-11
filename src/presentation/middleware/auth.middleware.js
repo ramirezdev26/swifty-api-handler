@@ -1,13 +1,17 @@
 import { auth } from '../../infrastructure/config/firebase.config.js';
-import { AppError } from '../../shared/errors/app-error.js';
+import { AppError } from '../../shared/errors/app.error.js';
 
 export class AuthMiddleware {
   static async verifyToken(req, res, next) {
     try {
       const token = AuthMiddleware.extractToken(req);
+      console.log('Token received:', token);
+
       const decodedToken = await auth.verifyIdToken(token);
+      console.log('Decoded token:', decodedToken);
 
       req.user = AuthMiddleware.buildUser(decodedToken);
+      console.log('Built user:', req.user);
       next();
     } catch (error) {
       const message = error instanceof AppError ? error.message : 'Invalid or expired token';
@@ -32,10 +36,8 @@ export class AuthMiddleware {
 
   static buildUser(decodedToken) {
     return {
-      uid: decodedToken.uid,
       email: decodedToken.email,
-      emailVerified: decodedToken.email_verified,
-      authTime: new Date(decodedToken.auth_time * 1000),
+      firebase_uid: decodedToken.user_id,
     };
   }
 }
