@@ -15,8 +15,8 @@ export class CreateUserDTO {
 }
 
 export class UserResponseDTO {
-  constructor({ id, firebase_uid, email, full_name }) {
-    this.id = id;
+  constructor({ uid, firebase_uid, email, full_name }) {
+    this.uid = uid;
     this.firebase_uid = firebase_uid;
     this.email = email;
     this.full_name = full_name;
@@ -24,7 +24,7 @@ export class UserResponseDTO {
 
   toJSON() {
     return {
-      id: this.id,
+      uid: this.uid,
       firebase_uid: this.firebase_uid,
       email: this.email,
       full_name: this.full_name,
