@@ -2,11 +2,11 @@ import { Email } from '../value-objects/email.vo.js';
 import { ValidationError } from '../../shared/errors/validation.error.js';
 
 export class User {
-  constructor({ email, firebase_uid, full_name = null, id = null }) {
+  constructor({ email, firebase_uid, full_name = null, uid = null }) {
     this._email = new Email(email);
     this._firebase_uid = firebase_uid;
     this._full_name = full_name;
-    this._id = id;
+    this._uid = uid;
   }
 
   validateFullName(full_name) {
@@ -23,8 +23,8 @@ export class User {
     return this._full_name;
   }
 
-  get id() {
-    return this._id;
+  get uid() {
+    return this._uid;
   }
 
   get firebase_uid() {

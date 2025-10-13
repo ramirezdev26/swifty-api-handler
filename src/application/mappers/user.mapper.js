@@ -2,9 +2,9 @@ import { User } from '../../domain/entities/user.entity.js';
 import { UserResponseDTO } from '../dtos/user.dto.js';
 
 export class UserMapper {
-  static toEntity(data, id = null) {
+  static toEntity(data, uid = null) {
     return new User({
-      id: data.id || id,
+      uid: data.uid || uid,
       email: data.email,
       full_name: data.full_name,
       firebase_uid: data.firebase_uid,
