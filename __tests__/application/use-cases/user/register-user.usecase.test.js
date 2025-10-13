@@ -36,7 +36,7 @@ describe('RegisterUserUseCase', () => {
   });
 
   const mockUserDto = {
-    id: 1,
+    uid: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     full_name: 'Test User',
     firebase_uid: 'firebase123',

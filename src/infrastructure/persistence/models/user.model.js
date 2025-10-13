@@ -5,9 +5,9 @@ export class UserModel extends Model {}
 
 UserModel.init(
   {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
+    uid: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
     firebase_uid: {
