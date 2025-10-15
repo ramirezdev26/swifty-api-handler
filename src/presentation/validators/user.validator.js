@@ -10,7 +10,10 @@ const registerSchema = Joi.object({
   full_name: Joi.string().min(2).allow(null, '').messages({
     'string.min': 'Full name must be at least 2 characters long',
   }),
-});
+  firebase_uid: Joi.string().optional().messages({
+    'string.base': 'Firebase UID must be a string',
+  }),
+}).options({ stripUnknown: true });
 
 export const validateRegisterInput = (req, res, next) => {
   try {
