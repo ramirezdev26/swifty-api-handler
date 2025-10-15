@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import pino from 'pino';
 import dotenv from 'dotenv';
 import router from './presentation/routes/api.routes.js';
@@ -25,6 +26,14 @@ const logger = pino({
 });
 
 const app = express();
+
+const corsOptions = {
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url}`);
