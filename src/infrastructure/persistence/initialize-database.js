@@ -1,4 +1,5 @@
 import sequelize from '../config/database.js';
+import { syncDatabase } from './models/index.js';
 
 async function testConnection() {
   try {
@@ -46,6 +47,10 @@ export async function initializeDatabase(maxRetries = null) {
     console.log('Initializing database connection...');
     console.log(`Max retries: ${retries}, Connection timeout: ${timeout}ms`);
     await retryConnection(retries, 1000);
+
+    console.log('Syncing database tables...');
+    await syncDatabase();
+
     console.log('Database initialized successfully.');
   } catch (error) {
     console.error('Database initialization failed after all retries:', error.message);

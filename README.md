@@ -22,6 +22,31 @@ A Node.js REST API built with Express.js, featuring clean architecture, Docker c
 - PostgreSQL (for local development)
 - GitLab account (for CI/CD)
 
+## 🗄️ Database Setup
+
+The API uses **PostgreSQL with Sequelize ORM**. Database tables are **automatically created** when the application starts through Sequelize model synchronization.
+
+### Database Models
+- **User Model**: Stores user information with Firebase authentication integration
+- **Automatic Table Creation**: Tables are created/updated automatically on startup
+- **Migrations**: Uses Sequelize sync (not migrations) for simplicity
+
+### Environment Variables
+```bash
+# Required for database connection
+DB_HOST=localhost          # PostgreSQL host
+DB_PORT=5432              # PostgreSQL port
+DB_USERNAME=swifty_user    # Database username
+DB_PASSWORD=swifty_password # Database password
+DB_NAME=swifty_db         # Database name
+```
+
+### Table Creation Process
+1. Application connects to PostgreSQL
+2. Sequelize reads model definitions
+3. `sequelize.sync()` creates/updates tables automatically
+4. Logs show: `Database models synced successfully`
+
 ## 🛠️ Local Development
 
 ### Using Docker Compose (Recommended)
