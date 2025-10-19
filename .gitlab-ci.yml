@@ -6,7 +6,6 @@ stages:
   - build
   - security
   - package
-  - deploy
 
 variables:
   # Node.js
