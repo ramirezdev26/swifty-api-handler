@@ -6,6 +6,7 @@ stages:
   - build
   - security
   - package
+  - version
 
 variables:
   # Node.js
