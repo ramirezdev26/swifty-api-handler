@@ -6,6 +6,9 @@ async function testConnection() {
   try {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
+
+    await sequelize.sync({ alter: true });
+    console.log('Database tables synchronized successfully.');
   } catch (error) {
     console.error('Unable to connect to the database:', error);
     throw error;
