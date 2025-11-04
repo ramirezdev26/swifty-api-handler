@@ -65,4 +65,57 @@ export class ImageRepository extends IImageRepository {
       totalCount: count,
     };
   }
+
+  async findUserImagesWithPagination(
+    userId,
+    page = 1,
+    limit = 12,
+    sortBy = 'created_at',
+    order = 'desc',
+    projectId = null,
+    style = null
+  ) {
+    const offset = (page - 1) * limit;
+
+    const validSortFields = ['created_at', 'processed_at', 'style'];
+    const validOrders = ['asc', 'desc'];
+
+    const finalSortBy = validSortFields.includes(sortBy) ? sortBy : 'created_at';
+    const finalOrder = validOrders.includes(order.toLowerCase()) ? order.toUpperCase() : 'DESC';
+
+    const whereConditions = {
+      user_id: userId,
+    };
+
+    if (projectId && projectId !== 'all') {
+      whereConditions.project_id = projectId;
+    }
+
+    if (style && style !== 'all') {
+      const styleMapping = {
+        anime: 'anime',
+        'pixel-art': 'pixel-art',
+        cartoon: 'cartoon',
+        realism: 'realism',
+        'oil-painting': 'oil-painting',
+      };
+
+      const dbStyle = styleMapping[style.toLowerCase()] || style;
+      whereConditions.style = dbStyle;
+    }
+
+    const { count, rows } = await ImageModel.findAndCountAll({
+      where: whereConditions,
+      order: [[finalSortBy, finalOrder]],
+      limit: limit,
+      offset: offset,
+    });
+
+    const images = rows.map((image) => ImageMapper.toEntity(image));
+
+    return {
+      images,
+      totalCount: count,
+    };
+  }
 }
