@@ -31,6 +31,12 @@ describe('ImageUploadedEventHandler', () => {
       },
     };
 
+    // Mock return values to pass null checks in handler
+    mockImageRepo.create.mockResolvedValue({ image_id: 'img-1' });
+    mockUserRepo.incrementImageCount.mockResolvedValue({ user_id: 'user-1' });
+    mockStatsRepo.incrementTotal.mockResolvedValue({ user_id: 'user-1' });
+    mockStatsRepo.incrementStyleUsed.mockResolvedValue({ user_id: 'user-1' });
+
     await handler.handle(event);
 
     expect(mockImageRepo.create).toHaveBeenCalledWith(
@@ -69,5 +75,48 @@ describe('ImageUploadedEventHandler', () => {
     expect(mockUserRepo.incrementImageCount).toHaveBeenCalledTimes(1);
     expect(mockStatsRepo.incrementTotal).toHaveBeenCalledTimes(1);
     expect(mockStatsRepo.incrementStyleUsed).toHaveBeenCalledWith('user-2', 'watercolor');
+  });
+
+  test('should throw error when user profile not found', async () => {
+    const event = {
+      type: 'ImageUploadedEvent',
+      data: {
+        imageId: 'img-3',
+        userId: 'user-3',
+        originalUrl: 'https://cloudinary.com/img3.jpg',
+        style: 'sketch',
+        size: 512,
+        userEmail: 'nonexistent@example.com',
+      },
+    };
+
+    mockImageRepo.create.mockResolvedValue({ image_id: 'img-3' });
+    mockUserRepo.incrementImageCount.mockResolvedValue(null); // User not found
+
+    await expect(handler.handle(event)).rejects.toThrow(
+      'User profile not found for userId: user-3'
+    );
+  });
+
+  test('should throw error when statistics not found', async () => {
+    const event = {
+      type: 'ImageUploadedEvent',
+      data: {
+        imageId: 'img-4',
+        userId: 'user-4',
+        originalUrl: 'https://cloudinary.com/img4.jpg',
+        style: 'pencil',
+        size: 256,
+        userEmail: 'user4@example.com',
+      },
+    };
+
+    mockImageRepo.create.mockResolvedValue({ image_id: 'img-4' });
+    mockUserRepo.incrementImageCount.mockResolvedValue({ user_id: 'user-4' }); // Profile exists
+    mockStatsRepo.incrementTotal.mockResolvedValue(null); // Stats not found
+
+    await expect(handler.handle(event)).rejects.toThrow(
+      'User statistics not found for userId: user-4'
+    );
   });
 });

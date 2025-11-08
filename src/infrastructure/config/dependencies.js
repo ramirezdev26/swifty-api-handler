@@ -30,7 +30,10 @@ export const setupDependencies = () => {
   const imageStatsRepository = new ImageStatisticsRepository(ImageStatisticsModel);
 
   // Event Handlers
-  const userRegisteredHandler = new UserRegisteredEventHandler(userProfileRepository);
+  const userRegisteredHandler = new UserRegisteredEventHandler(
+    userProfileRepository,
+    imageStatsRepository
+  );
   const imageUploadedHandler = new ImageUploadedEventHandler(
     processedImageRepository,
     userProfileRepository,
