@@ -1,7 +1,5 @@
 import amqp from 'amqplib';
-import crypto from 'crypto';
 import { config } from '../config/env.js';
-import { setupRabbitMQInfrastructure } from './rabbitmq-setup.service.js';
 
 class RabbitMQService {
   constructor() {
@@ -13,18 +11,12 @@ class RabbitMQService {
     this.reconnectDelay = 5000;
   }
 
-  generateEventId() {
-    return `evt_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-  }
-
-  getPartitionKey(imageId) {
-    const hash = crypto.createHash('md5').update(imageId).digest('hex');
-    const hashInt = parseInt(hash.substring(0, 8), 16);
-    return hashInt % config.rabbitmq.partitions;
+  getChannel() {
+    return this.channel;
   }
 
   async connect() {
-    const { url } = config.rabbitmq;
+    const { url, exchange } = config.rabbitmq;
     if (!url) {
       throw new Error('RABBITMQ_URL is not defined in environment variables');
     }
@@ -34,30 +26,30 @@ class RabbitMQService {
         this.connection = await amqp.connect(url);
         this.channel = await this.connection.createChannel();
 
-        // Keep backward compatibility - existing queues
-        await this.channel.assertQueue('image_processing', { durable: true });
-        await this.channel.assertQueue('status_updates', { durable: true });
-
-        // Setup new partitioned infrastructure
-        await setupRabbitMQInfrastructure(this.channel);
+        // For Query Service - just assert the exchange exists
+        // (should be created by Command Service, but we assert to be safe)
+        if (exchange) {
+          await this.channel.assertExchange(exchange, 'topic', { durable: true });
+          console.log(`[RabbitMQ] Exchange '${exchange}' ready`);
+        }
 
         this.isConnected = true;
         this.reconnectAttempts = 0;
-        console.log('Connected to RabbitMQ');
+        console.log('[RabbitMQ] Connected successfully');
 
         this.connection.on('error', (err) => {
-          console.error('RabbitMQ connection error:', err);
+          console.error('[RabbitMQ] Connection error:', err);
           this.isConnected = false;
         });
 
         this.connection.on('close', () => {
           this.isConnected = false;
-          console.log('RabbitMQ connection closed');
+          console.log('[RabbitMQ] Connection closed');
         });
 
         return;
       } catch (error) {
-        console.error(`RabbitMQ connection attempt ${attempt} failed:`, error.message);
+        console.error(`[RabbitMQ] Connection attempt ${attempt} failed:`, error.message);
         this.reconnectAttempts = attempt;
 
         if (attempt < this.maxReconnectAttempts) {
@@ -66,51 +58,6 @@ class RabbitMQService {
           throw new Error('Failed to connect to RabbitMQ after maximum attempts');
         }
       }
-    }
-  }
-
-  async publishImageUploaded(payload) {
-    if (!this.isConnected || !this.channel) {
-      throw new Error('RabbitMQ is not connected');
-    }
-
-    const partition = this.getPartitionKey(payload.imageId);
-    const routingKey = `image.uploaded.partition.${partition}`;
-    const { exchange } = config.rabbitmq;
-
-    // Log partition assignment for verification
-    console.log(`Publishing to partition ${partition} for imageId: ${payload.imageId}`);
-
-    const event = {
-      eventType: 'ImageUploaded',
-      eventId: this.generateEventId(),
-      timestamp: new Date().toISOString(),
-      version: '1.0',
-      payload: {
-        imageId: payload.imageId,
-        userId: payload.userId,
-        originalImageUrl: payload.originalImageUrl,
-        style: payload.style,
-      },
-    };
-
-    try {
-      // Publish to partitioned exchange
-      this.channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(event)), {
-        persistent: true,
-        headers: {
-          'x-partition': partition,
-          'x-retry-count': 0,
-        },
-      });
-
-      // Keep backward compatibility - also publish to old queue
-      this.channel.sendToQueue('image_processing', Buffer.from(JSON.stringify(event)), {
-        persistent: true,
-      });
-    } catch (error) {
-      console.error('Error publishing ImageUploaded event:', error);
-      throw error;
     }
   }
 
