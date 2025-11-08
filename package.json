@@ -1,7 +1,7 @@
 {
-  "name": "swifty-api-command",
+  "name": "swifty-api",
   "version": "1.0.0",
-  "description": "Swifty Command API - CQRS Write Model",
+  "description": "Swifty API - A Node.js API project",
   "main": "index.js",
   "type": "module",
   "scripts": {

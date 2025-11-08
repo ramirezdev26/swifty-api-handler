@@ -1,10 +1,10 @@
-import { ProcessImageCommand } from '../../application/commands/process-image.command.js';
+import { ProcessImageUseCase } from '../../application/use-cases/image/process-image.usecase.js';
+import { ImageRepository } from '../../infrastructure/persistence/repositories/image.repository.js';
+import { UserRepository } from '../../infrastructure/persistence/repositories/user.repository.js';
 
-let processImageHandler;
-
-export function setProcessImageHandler(handler) {
-  processImageHandler = handler;
-}
+const imageRepository = new ImageRepository();
+const userRepository = new UserRepository();
+const processImageUseCase = new ProcessImageUseCase(imageRepository, userRepository);
 
 export const processImage = async (req, res, next) => {
   try {
@@ -13,11 +13,10 @@ export const processImage = async (req, res, next) => {
     const imageBuffer = req.file.buffer;
     const fileSize = req.file.size;
 
-    const command = new ProcessImageCommand(firebase_uid, imageBuffer, style, fileSize);
-    const result = await processImageHandler.execute(command);
+    const result = await processImageUseCase.execute(firebase_uid, imageBuffer, style, fileSize);
 
-    res.status(202).json({
-      message: 'Image is being processed',
+    res.status(200).json({
+      message: 'Data successfully retrieved',
       data: result,
     });
   } catch (error) {

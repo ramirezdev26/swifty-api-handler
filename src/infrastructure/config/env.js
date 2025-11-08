@@ -39,6 +39,5 @@ export const config = {
     partitions: parseInt(process.env.RABBITMQ_PARTITIONS) || 3,
     messageTtl: parseInt(process.env.RABBITMQ_MESSAGE_TTL) || 300000,
     dlqTtl: parseInt(process.env.RABBITMQ_DLQ_TTL) || 86400000,
-    eventExchange: process.env.RABBITMQ_EVENT_EXCHANGE || 'swifty.events',
   },
 };
