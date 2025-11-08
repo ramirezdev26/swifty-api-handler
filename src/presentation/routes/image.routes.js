@@ -1,33 +1,23 @@
 import { Router } from 'express';
-import multer from 'multer';
-import { processImage, getProcessedImages } from '../controllers/image.controller.js';
-import {
-  validateProcessImageInput,
-  validateGetProcessedImagesInput,
-} from '../validators/image.validator.js';
 import AuthMiddleware from '../middleware/auth.middleware.js';
 
-const router = Router();
+/**
+ * Image Query Routes (Read-Only)
+ * Used by Query Service - only GET endpoints
+ */
+export const createImageRoutes = (imageQueryController) => {
+  const router = Router();
 
-const MAX_FILE_SIZE_MB = 10;
-const BYTES_PER_MB = 1024 * 1024;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * BYTES_PER_MB;
+  // Apply authentication to all routes
+  router.use(AuthMiddleware.verifyToken);
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: MAX_FILE_SIZE_BYTES,
-  },
-});
+  // GET /api/images - List user's processed images (with filters)
+  router.get('/', imageQueryController.getProcessedImages);
 
-router.post(
-  '/process',
-  AuthMiddleware.verifyToken,
-  upload.single('image'),
-  validateProcessImageInput,
-  processImage
-);
+  // GET /api/images/:id - Get specific image details
+  router.get('/:id', imageQueryController.getImageById);
 
-router.get('/', validateGetProcessedImagesInput, getProcessedImages);
+  return router;
+};
 
-export default router;
+export default createImageRoutes;

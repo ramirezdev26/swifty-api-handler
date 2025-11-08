@@ -17,6 +17,9 @@ export const config = {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
   },
+  mongodb: {
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/swifty_read',
+  },
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,
     privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),

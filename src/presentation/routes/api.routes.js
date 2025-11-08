@@ -1,22 +1,29 @@
 import { Router } from 'express';
-import authRoutes from './auth.routes.js';
-import userRoutes from './user.routes.js';
-import imageRoutes from './image.routes.js';
+import { createImageRoutes } from './image.routes.js';
+import { createUserRoutes } from './user.routes.js';
+import { createStatisticsRoutes } from './statistics.routes.js';
 
-const router = Router();
+/**
+ * API Routes for Query Service
+ * All routes are read-only (GET only) and require authentication
+ *
+ * @param {Object} controllers - Injected controllers
+ * @param {Object} controllers.imageQueryController - Image query controller
+ * @param {Object} controllers.userQueryController - User query controller
+ * @param {Object} controllers.statisticsController - Statistics controller
+ * @returns {Router} Configured API router
+ */
+export const createApiRoutes = (controllers) => {
+  const router = Router();
 
-// Health check endpoint for container orchestration
-router.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0',
-  });
-});
+  const { imageQueryController, userQueryController, statisticsController } = controllers;
 
-router.use('/auth', authRoutes);
-router.use('/user', userRoutes);
-router.use('/images', imageRoutes);
+  // Setup route handlers with dependency injection
+  router.use('/images', createImageRoutes(imageQueryController));
+  router.use('/users', createUserRoutes(userQueryController));
+  router.use('/stats', createStatisticsRoutes(statisticsController));
 
-export default router;
+  return router;
+};
+
+export default createApiRoutes;
