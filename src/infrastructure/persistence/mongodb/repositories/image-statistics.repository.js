@@ -14,7 +14,7 @@ export class ImageStatisticsRepository {
         $inc: { total_images: 1, processing_images: 1 },
         $set: { last_updated: new Date() },
       },
-      { upsert: true, new: true }
+      { new: true }
     );
   }
 
@@ -40,7 +40,7 @@ export class ImageStatisticsRepository {
           last_updated: new Date(),
         },
       },
-      { upsert: true, new: true }
+      { new: true }
     );
   }
 
@@ -54,7 +54,7 @@ export class ImageStatisticsRepository {
         },
         $set: { last_updated: new Date() },
       },
-      { upsert: true, new: true }
+      { new: true }
     );
   }
 
@@ -64,6 +64,25 @@ export class ImageStatisticsRepository {
       {
         $inc: { [`styles_used.${style}`]: 1 },
         $set: { last_updated: new Date() },
+      },
+      { new: true }
+    );
+  }
+
+  async initializeForUser(userId) {
+    return await this.model.findOneAndUpdate(
+      { user_id: userId },
+      {
+        $setOnInsert: {
+          user_id: userId,
+          total_images: 0,
+          completed_images: 0,
+          failed_images: 0,
+          processing_images: 0,
+          avg_processing_time: 0,
+          styles_used: new Map(),
+          last_updated: new Date(),
+        },
       },
       { upsert: true, new: true }
     );

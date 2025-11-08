@@ -26,14 +26,15 @@ export class UserProfileRepository {
         $inc: { total_images: 1 },
         $set: { last_activity: new Date() },
       },
-      { upsert: true, new: true }
+      { new: true }
     );
   }
 
   async updateLastActivity(userId) {
     return await this.model.findOneAndUpdate(
       { user_id: userId },
-      { $set: { last_activity: new Date() } }
+      { $set: { last_activity: new Date() } },
+      { new: true }
     );
   }
 }
