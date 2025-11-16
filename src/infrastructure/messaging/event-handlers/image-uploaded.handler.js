@@ -6,7 +6,7 @@ export class ImageUploadedEventHandler {
   }
 
   async handle(event) {
-    const { imageId, userId, originalUrl, style, size, userEmail } = event.data;
+    const { imageId, userId, originalUrl, style, size, userEmail, userName } = event.data;
 
     try {
       // 1. Create processed image view
@@ -14,6 +14,7 @@ export class ImageUploadedEventHandler {
         image_id: imageId,
         user_id: userId,
         user_email: userEmail,
+        user_name: userName,
         original_url: originalUrl,
         style: style,
         size: size,

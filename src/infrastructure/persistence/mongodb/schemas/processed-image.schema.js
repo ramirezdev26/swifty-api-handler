@@ -14,6 +14,7 @@ const processedImageSchema = new mongoose.Schema(
       index: true,
     },
     user_email: String, // Desnormalizado
+    user_name: String,
     cloudinary_id: String,
     original_url: String,
     processed_url: String,

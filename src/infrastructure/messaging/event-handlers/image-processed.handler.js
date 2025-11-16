@@ -5,13 +5,13 @@ export class ImageProcessedEventHandler {
   }
 
   async handle(event) {
-    const { imageId, processedUrl, processingTime, userId } = event.data;
+    const { imageId, processed_url, processing_time, userId } = event.data;
 
     try {
       // 1. Update image view
       await this.processedImageRepository.update(imageId, {
-        processed_url: processedUrl,
-        processing_time: processingTime,
+        processed_url: processed_url,
+        processing_time: processing_time,
         status: 'completed',
         processed_at: new Date(),
       });
@@ -19,7 +19,7 @@ export class ImageProcessedEventHandler {
       // 2. Update statistics
       const statsUpdate = await this.imageStatsRepository.incrementCompleted(
         userId,
-        processingTime
+        processing_time
       );
       if (!statsUpdate) {
         throw new Error(`User statistics not found for userId: ${userId}. Sync issue detected.`);
