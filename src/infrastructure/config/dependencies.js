@@ -15,6 +15,7 @@ import { GetProcessedImagesHandler } from '../../application/query-handlers/get-
 import { GetImageByIdHandler } from '../../application/query-handlers/get-image-by-id.handler.js';
 import { GetUserProfileHandler } from '../../application/query-handlers/get-user-profile.handler.js';
 import { GetImageStatisticsHandler } from '../../application/query-handlers/get-image-statistics.handler.js';
+import { GetUserImagesHandler } from '../../application/query-handlers/get-user-images.handler.js';
 
 import { ImageQueryController } from '../../presentation/controllers/image-query.controller.js';
 import { UserQueryController } from '../../presentation/controllers/user-query.controller.js';
@@ -68,12 +69,14 @@ export const setupDependencies = () => {
   const getImageByIdHandler = new GetImageByIdHandler(processedImageRepository);
   const getUserProfileHandler = new GetUserProfileHandler(userProfileRepository);
   const getImageStatisticsHandler = new GetImageStatisticsHandler(imageStatsRepository);
+  const getUserImagesHandler = new GetUserImagesHandler(processedImageRepository);
 
   // Controllers
   const imageQueryController = new ImageQueryController(
     getProcessedImagesHandler,
     getImageByIdHandler,
-    userProfileRepository
+    userProfileRepository,
+    getUserImagesHandler
   );
   const userQueryController = new UserQueryController(getUserProfileHandler, userProfileRepository);
   const statisticsController = new StatisticsController(

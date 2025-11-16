@@ -33,6 +33,7 @@ npm run dev
 ### What is This Service?
 
 This is the **Query Side** of a CQRS architecture:
+
 - ✅ **Read-only operations** (GET endpoints)
 - ✅ **MongoDB** for fast queries
 - ✅ **Event-driven** updates from RabbitMQ
@@ -65,27 +66,32 @@ Command Service (3000)     Query Service (3002)
 All endpoints require Firebase authentication token.
 
 ### Images
+
 ```http
 GET /api/images              # List user's processed images
 GET /api/images/:id          # Get specific image details
 ```
 
 **Query Parameters:**
+
 - `status`: Filter by status (processing, completed, failed)
 - `style`: Filter by style (cartoon, watercolor, etc.)
 - `limit`: Max results (default: 50)
 
 ### Users
+
 ```http
 GET /api/users/profile       # Get user profile with stats
 ```
 
 ### Statistics
+
 ```http
 GET /api/stats/images        # Get aggregated image statistics
 ```
 
 ### Health
+
 ```http
 GET /health                  # Service health check
 ```
@@ -93,7 +99,9 @@ GET /health                  # Service health check
 ## 🗃️ MongoDB Collections
 
 ### 1. user_profiles
+
 User profile materialized view:
+
 ```javascript
 {
   user_id: "uuid",
@@ -107,7 +115,9 @@ User profile materialized view:
 ```
 
 ### 2. processed_images
+
 Denormalized image view:
+
 ```javascript
 {
   image_id: "uuid",
@@ -124,7 +134,9 @@ Denormalized image view:
 ```
 
 ### 3. image_statistics
+
 Pre-aggregated statistics:
+
 ```javascript
 {
   user_id: "uuid",
@@ -141,12 +153,12 @@ Pre-aggregated statistics:
 
 This service consumes the following events from `swifty.query-events` queue:
 
-| Event Type | Handler | Action |
-|------------|---------|--------|
-| `user.registered` | UserRegisteredEventHandler | Create user profile |
-| `image.uploaded` | ImageUploadedEventHandler | Create image record + update stats |
-| `image.processed` | ImageProcessedEventHandler | Update status + metrics |
-| `image.failed` | ProcessingFailedEventHandler | Mark as failed |
+| Event Type        | Handler                      | Action                             |
+| ----------------- | ---------------------------- | ---------------------------------- |
+| `user.registered` | UserRegisteredEventHandler   | Create user profile                |
+| `image.uploaded`  | ImageUploadedEventHandler    | Create image record + update stats |
+| `image.processed` | ImageProcessedEventHandler   | Update status + metrics            |
+| `image.failed`    | ProcessingFailedEventHandler | Mark as failed                     |
 
 ## 🛠️ Technology Stack
 
@@ -162,6 +174,7 @@ This service consumes the following events from `swifty.query-events` queue:
 ## 📦 Installation
 
 ### Prerequisites
+
 - Node.js 18 or higher
 - MongoDB 7+ (local or cloud)
 - RabbitMQ 3+ (local or cloud)
@@ -170,6 +183,7 @@ This service consumes the following events from `swifty.query-events` queue:
 ### Setup
 
 1. **Clone and Install**
+
    ```bash
    git clone <repository>
    cd swifty-api-handler
@@ -177,11 +191,13 @@ This service consumes the following events from `swifty.query-events` queue:
    ```
 
 2. **Start Dependencies**
+
    ```bash
    docker-compose up -d mongodb rabbitmq
    ```
 
 3. **Configure Environment**
+
    ```bash
    cp .env.example .env
    # Edit .env with your credentials
@@ -211,6 +227,7 @@ npm test -- --coverage
 ## 🐳 Docker Deployment
 
 ### Using Docker Compose
+
 ```bash
 # Start all services
 docker-compose up -d
@@ -223,6 +240,7 @@ docker-compose down
 ```
 
 ### Build Standalone Image
+
 ```bash
 docker build -t swifty-query-service .
 docker run -p 3002:3002 --env-file .env swifty-query-service
@@ -265,11 +283,13 @@ FRONTEND_URL=http://localhost:3000
 ## 🔍 Monitoring
 
 ### Health Check
+
 ```bash
 curl http://localhost:3002/health
 ```
 
 ### MongoDB Monitoring
+
 ```bash
 # Check collections
 mongosh mongodb://localhost:27017/swifty_read --eval "show collections"
@@ -279,24 +299,28 @@ mongosh mongodb://localhost:27017/swifty_read --eval "db.stats()"
 ```
 
 ### RabbitMQ Monitoring
+
 - UI: http://localhost:15672
 - User: `guest` / Pass: `guest`
 
 ## 🚨 Troubleshooting
 
 ### MongoDB Connection Issues
+
 ```bash
 docker ps | grep mongo
 docker logs mongodb
 ```
 
 ### RabbitMQ Not Connected
+
 ```bash
 docker ps | grep rabbitmq
 docker logs rabbitmq
 ```
 
 ### Events Not Processing
+
 1. Check queue exists in RabbitMQ UI
 2. Verify exchange bindings
 3. Check service logs for errors
@@ -314,6 +338,7 @@ This service works alongside a **Command Service** (port 3000):
 3. **Communication**: Via RabbitMQ events
 
 ### Example Flow
+
 ```
 Client → Command Service: POST /api/images/process
 Command Service → PostgreSQL: Save image
@@ -384,4 +409,3 @@ This is part of the Swifty platform. See main repository for contribution guidel
 **Service**: Query Service (CQRS Read Model)  
 **Port**: 3002  
 **Version**: 1.0.0
-

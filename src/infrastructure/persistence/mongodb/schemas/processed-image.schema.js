@@ -40,6 +40,8 @@ const processedImageSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    project_name: { type: String, default: null },
+    visibility: { type: String, enum: ['public', 'private'], default: 'public', index: true },
   },
   {
     collection: 'processed_images',

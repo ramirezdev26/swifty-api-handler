@@ -8,14 +8,11 @@ import AuthMiddleware from '../middleware/auth.middleware.js';
 export const createImageRoutes = (imageQueryController) => {
   const router = Router();
 
-  // Apply authentication to all routes
-  router.use(AuthMiddleware.verifyToken);
-
-  // GET /api/images - List user's processed images (with filters)
+  // Public endpoints - no authentication
   router.get('/', imageQueryController.getProcessedImages);
 
-  // GET /api/images/:id - Get specific image details
-  router.get('/:id', imageQueryController.getImageById);
+  // Protected endpoint - authentication required
+  router.get('/users/me', AuthMiddleware.verifyToken, imageQueryController.getMyImages);
 
   return router;
 };
