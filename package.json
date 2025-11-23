@@ -1,7 +1,7 @@
 {
-  "name": "swifty-api",
+  "name": "swifty-api-query",
   "version": "1.0.0",
-  "description": "Swifty API - A Node.js API project",
+  "description": "Swifty Query API - CQRS Read Model (Port 3002)",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -23,12 +23,14 @@
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "amqplib": "^0.10.9",
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "firebase-admin": "^13.5.0",
     "joi": "^18.0.1",
+    "mongoose": "^8.19.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "pg": "^8.16.3",

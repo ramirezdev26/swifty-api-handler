@@ -44,6 +44,7 @@ src/
 ## 🏗️ Architecture Layers
 
 ### 1. Presentation Layer
+
 - **Responsibility**: Handle HTTP requests and responses
 - **Dependencies**: Application layer (use cases)
 - **Components**:
@@ -53,6 +54,7 @@ src/
   - Validators: Input validation
 
 ### 2. Application Layer
+
 - **Responsibility**: Orchestrate business logic and coordinate use cases
 - **Dependencies**: Domain layer, interfaces
 - **Components**:
@@ -62,6 +64,7 @@ src/
   - Interfaces: Define contracts for infrastructure
 
 ### 3. Domain Layer
+
 - **Responsibility**: Core business logic and rules (framework-agnostic)
 - **Dependencies**: None (pure business logic)
 - **Components**:
@@ -71,6 +74,7 @@ src/
   - Events: Domain events for event-driven architecture
 
 ### 4. Infrastructure Layer
+
 - **Responsibility**: External concerns (database, APIs, frameworks)
 - **Dependencies**: Application interfaces
 - **Components**:
@@ -80,6 +84,7 @@ src/
   - Logger: Logging implementation
 
 ### 5. Shared Layer
+
 - **Responsibility**: Common utilities used across all layers
 - **Components**:
   - Errors: Custom error classes
@@ -95,6 +100,7 @@ Presentation → Application → Domain ← Infrastructure
 ```
 
 **Key Principles**:
+
 - Inner layers never depend on outer layers
 - Dependencies point inward (Dependency Inversion)
 - Domain layer has no external dependencies
@@ -103,17 +109,20 @@ Presentation → Application → Domain ← Infrastructure
 ## 🚀 Getting Started
 
 1. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Configure environment**:
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 3. **Run the application**:
+
    ```bash
    npm run dev
    ```
@@ -128,12 +137,14 @@ Presentation → Application → Domain ← Infrastructure
 ### Example: Adding a new entity (e.g., Product)
 
 1. **Domain Layer**: Create entity
+
    ```javascript
    // src/domain/entities/product.entity.js
    export class Product { ... }
    ```
 
 2. **Application Layer**: Create use cases and DTOs
+
    ```javascript
    // src/application/use-cases/product/create-product.usecase.js
    // src/application/dtos/product.dto.js
@@ -141,6 +152,7 @@ Presentation → Application → Domain ← Infrastructure
    ```
 
 3. **Infrastructure Layer**: Implement repository
+
    ```javascript
    // src/infrastructure/persistence/models/product.model.js
    // src/infrastructure/persistence/repositories/product.repository.js
