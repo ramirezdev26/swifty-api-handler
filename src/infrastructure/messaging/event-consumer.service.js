@@ -1,58 +1,50 @@
+import rabbitmqService from '../services/rabbitmq.service.js';
+import imageResultConsumer from '../consumers/image-result.consumer.js';
+
 export class EventConsumerService {
-  constructor(rabbitmqConnection, eventHandlers) {
-    this.connection = rabbitmqConnection;
-    this.eventHandlers = eventHandlers;
-    this.queueName = 'swifty.query-events';
-    this.exchange = 'swifty.events';
+  constructor() {
+    this.imageResultConsumer = imageResultConsumer;
   }
 
   async start() {
-    const channel = await this.connection.getChannel();
+    try {
+      const channel = rabbitmqService.getChannel();
 
-    // Assert exchange (should already exist from command service)
-    await channel.assertExchange(this.exchange, 'topic', { durable: true });
+      const RESULT_EXCHANGE = 'image.results';
+      const QUEUE_NAME = 'status_updates.handler';
 
-    // Assert queue
-    await channel.assertQueue(this.queueName, {
-      durable: true,
-      arguments: {
-        'x-message-ttl': 86400000, // 24 hours
-        'x-max-length': 10000,
-      },
-    });
+      // Assert fanout exchange
+      await channel.assertExchange(RESULT_EXCHANGE, 'fanout', { durable: true });
 
-    // Bind to all relevant events
-    await channel.bindQueue(this.queueName, this.exchange, 'user.*');
-    await channel.bindQueue(this.queueName, this.exchange, 'image.*');
+      // Assert queue for this consumer
+      await channel.assertQueue(QUEUE_NAME, { durable: true });
 
-    // Set prefetch
-    await channel.prefetch(1);
+      // Bind queue to exchange (receives ALL messages from exchange)
+      await channel.bindQueue(QUEUE_NAME, RESULT_EXCHANGE, '');
 
-    // Start consuming
-    channel.consume(this.queueName, async (msg) => {
-      if (!msg) return;
+      await channel.prefetch(1);
 
-      try {
-        const event = JSON.parse(msg.content.toString());
-        console.log(`[QueryService] Received: ${event.type}`);
+      console.log('[EventConsumer] Listening on', QUEUE_NAME);
 
-        const handler = this.eventHandlers.get(event.type);
-        if (handler) {
-          await handler.handle(event);
-          channel.ack(msg);
-        } else {
-          console.warn(`[QueryService] No handler for: ${event.type}`);
-          channel.ack(msg); // Ack anyway to avoid requeue loop
-        }
-      } catch (error) {
-        console.error('[QueryService] Error processing event:', error);
-        // Requeue with delay
-        setTimeout(() => {
-          channel.nack(msg, false, true);
-        }, 5000);
-      }
-    });
-
-    console.log(`[QueryService] Listening on ${this.queueName}`);
+      await channel.consume(
+        QUEUE_NAME,
+        async (msg) => {
+          if (msg !== null) {
+            try {
+              const event = JSON.parse(msg.content.toString());
+              await this.imageResultConsumer.handleEvent(event);
+              channel.ack(msg);
+            } catch (error) {
+              console.error('[EventConsumer] Error processing event:', error);
+              channel.nack(msg, false, false);
+            }
+          }
+        },
+        { noAck: false }
+      );
+    } catch (error) {
+      console.error('[EventConsumer] Failed to start:', error);
+      throw error;
+    }
   }
 }
