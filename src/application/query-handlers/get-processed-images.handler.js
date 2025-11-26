@@ -3,11 +3,37 @@ export class GetProcessedImagesHandler {
     this.processedImageRepository = processedImageRepository;
   }
 
-  async execute(query) {
+  async execute(query, logger) {
+    const startTime = Date.now();
+
+    logger.debug(
+      {
+        event: 'query.processed-images.started',
+        userId: query.userId,
+        filters: query.filters,
+      },
+      'Fetching processed images from MongoDB'
+    );
+
     // If query.userId present -> scoped to that user, else global
     const repositoryResult = query.userId
       ? await this.processedImageRepository.findByUserId(query.userId, query.filters)
       : await this.processedImageRepository.findAllProcessed(query.filters);
+
+    const duration = Date.now() - startTime;
+
+    logger.info(
+      {
+        event: 'query.processed-images.completed',
+        resultCount: repositoryResult.images.length,
+        userId: query.userId,
+        filters: query.filters,
+        pagination: repositoryResult.pagination,
+        duration,
+        isSlowQuery: duration > 100,
+      },
+      `Found ${repositoryResult.images.length} processed images`
+    );
 
     const images = repositoryResult.images.map((img) => ({
       id: img.image_id,
