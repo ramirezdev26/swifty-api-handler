@@ -11,9 +11,10 @@ export class GetUserProfileHandler {
     }
 
     return {
-      userId: profile.user_id,
+      uid: profile.user_id,
+      firebase_uid: profile.firebase_uid,
       email: profile.email,
-      fullName: profile.full_name,
+      full_name: profile.full_name,
       totalImages: profile.total_images,
       totalProcessingTime: profile.total_processing_time,
       lastActivity: profile.last_activity,

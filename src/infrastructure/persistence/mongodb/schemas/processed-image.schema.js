@@ -14,6 +14,7 @@ const processedImageSchema = new mongoose.Schema(
       index: true,
     },
     user_email: String, // Desnormalizado
+    user_name: String,
     cloudinary_id: String,
     original_url: String,
     processed_url: String,
@@ -39,6 +40,8 @@ const processedImageSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    project_name: { type: String, default: null },
+    visibility: { type: String, enum: ['public', 'private'], default: 'public', index: true },
   },
   {
     collection: 'processed_images',
