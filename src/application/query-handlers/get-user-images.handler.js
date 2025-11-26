@@ -3,9 +3,34 @@ export class GetUserImagesHandler {
     this.processedImageRepository = processedImageRepository;
   }
 
-  async execute(query) {
+  async execute(query, logger) {
+    const startTime = Date.now();
     const { userId, options } = query;
+
+    logger.debug(
+      {
+        event: 'query.user-images.started',
+        userId,
+        options,
+      },
+      'Fetching user images from MongoDB'
+    );
+
     const result = await this.processedImageRepository.findForUserDashboard(userId, options);
+    const duration = Date.now() - startTime;
+
+    logger.info(
+      {
+        event: 'query.user-images.completed',
+        userId,
+        resultCount: result.images.length,
+        options,
+        pagination: result.pagination,
+        duration,
+        isSlowQuery: duration > 100,
+      },
+      `Found ${result.images.length} images for user`
+    );
 
     const images = result.images.map((img) => ({
       id: img.image_id,

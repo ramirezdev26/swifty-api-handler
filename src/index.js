@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import pino from 'pino';
 import dotenv from 'dotenv';
+import { logger } from './infrastructure/logger/pino.config.js';
+import { correlationIdMiddleware } from './presentation/middleware/correlation-id.middleware.js';
+import { httpLoggerMiddleware } from './presentation/middleware/http-logger.middleware.js';
 import errorMiddleware from './presentation/middleware/error.middleware.js';
 import mongoDBConnection from './infrastructure/persistence/mongodb/connection.js';
 import rabbitmqService from './infrastructure/services/rabbitmq.service.js';
@@ -10,22 +12,18 @@ import { createApiRoutes } from './presentation/routes/api.routes.js';
 
 dotenv.config();
 
-const isDevelopment = process.env.NODE_ENV !== 'production';
 const PORT = process.env.PORT || 3002;
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  ...(isDevelopment && {
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: 'SYS:standard',
-        ignore: 'pid,hostname',
-      },
-    },
-  }),
-});
+// Startup log
+logger.info(
+  {
+    event: 'app.startup',
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development',
+    nodeVersion: process.version,
+  },
+  'swifty-api-handler starting...'
+);
 
 const app = express();
 
@@ -37,30 +35,67 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.url}`);
-  logger.debug('Headers:', req.headers);
-  next();
-});
+// Apply correlation ID middleware first
+app.use(correlationIdMiddleware);
+
+// Apply HTTP logging middleware
+app.use(httpLoggerMiddleware);
 
 app.use(express.json());
 
-// Health check
+// Health check (before correlation middleware for lightweight checks)
 app.get('/health', (req, res) => {
-  res.json({
+  const healthStatus = {
     status: 'ok',
-    service: 'query',
+    service: 'swifty-api-handler',
+    version: process.env.npm_package_version || '1.0.0',
     mongodb: mongoDBConnection.isConnected(),
-  });
+    rabbitmq: rabbitmqService.isConnected,
+    timestamp: new Date().toISOString(),
+  };
+
+  req.logger?.debug(
+    {
+      event: 'health-check',
+      status: healthStatus,
+    },
+    'Health check performed'
+  );
+
+  res.json(healthStatus);
 });
 
 const startServer = async () => {
   try {
+    logger.info(
+      {
+        event: 'app.initialization.started',
+      },
+      'Initializing application...'
+    );
+
     // Connect to MongoDB
+    logger.info(
+      {
+        event: 'mongodb.connection.started',
+      },
+      'Connecting to MongoDB...'
+    );
     await mongoDBConnection.connect();
-    logger.info('[MongoDB] Connected successfully');
+    logger.info(
+      {
+        event: 'mongodb.connection.success',
+      },
+      'MongoDB connected successfully'
+    );
 
     // Setup dependencies
+    logger.debug(
+      {
+        event: 'app.dependencies.setup',
+      },
+      'Setting up dependencies...'
+    );
     const {
       eventConsumerService,
       imageQueryController,
@@ -70,11 +105,9 @@ const startServer = async () => {
 
     // Initialize RabbitMQ connection
     await rabbitmqService.connect();
-    logger.info('[RabbitMQ] Connected successfully');
 
     // Start event consumer
     await eventConsumerService.start();
-    logger.info('[EventConsumer] Started successfully');
 
     // Setup API routes with dependency injection
     const apiRoutes = createApiRoutes({
@@ -89,27 +122,102 @@ const startServer = async () => {
     app.use(errorMiddleware);
 
     app.listen(PORT, () => {
-      logger.info(`[Query Service] Running on port ${PORT}`);
+      logger.info(
+        {
+          event: 'app.startup.completed',
+          port: PORT,
+          environment: process.env.NODE_ENV || 'development',
+        },
+        `Query Service running on port ${PORT}`
+      );
     });
   } catch (error) {
-    logger.error('Failed to initialize application:', error);
+    logger.fatal(
+      {
+        event: 'app.startup.failed',
+        error: {
+          type: error.constructor.name,
+          message: error.message,
+          stack: error.stack,
+        },
+      },
+      'Failed to initialize application'
+    );
     process.exit(1);
   }
 };
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  await rabbitmqService.close();
-  await mongoDBConnection.disconnect();
-  process.exit(0);
+  logger.info(
+    {
+      event: 'app.shutdown.started',
+      signal: 'SIGTERM',
+    },
+    'SIGTERM received, shutting down gracefully'
+  );
+
+  try {
+    await rabbitmqService.close();
+    await mongoDBConnection.disconnect();
+
+    logger.info(
+      {
+        event: 'app.shutdown.completed',
+      },
+      'Server shut down gracefully'
+    );
+    process.exit(0);
+  } catch (error) {
+    logger.error(
+      {
+        event: 'app.shutdown.error',
+        error: {
+          type: error.constructor.name,
+          message: error.message,
+          stack: error.stack,
+        },
+      },
+      'Error during shutdown'
+    );
+    process.exit(1);
+  }
 });
 
 process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  await rabbitmqService.close();
-  await mongoDBConnection.disconnect();
-  process.exit(0);
+  logger.info(
+    {
+      event: 'app.shutdown.started',
+      signal: 'SIGINT',
+    },
+    'SIGINT received, shutting down gracefully'
+  );
+
+  try {
+    await rabbitmqService.close();
+    await mongoDBConnection.disconnect();
+
+    logger.info(
+      {
+        event: 'app.shutdown.completed',
+      },
+      'Server shut down gracefully'
+    );
+    process.exit(0);
+  } catch (error) {
+    logger.error(
+      {
+        event: 'app.shutdown.error',
+        error: {
+          type: error.constructor.name,
+          message: error.message,
+          stack: error.stack,
+        },
+      },
+      'Error during shutdown'
+    );
+    process.exit(1);
+  }
 });
 
 startServer();
