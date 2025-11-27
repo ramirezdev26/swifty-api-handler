@@ -30,11 +30,11 @@ export class UserProfileRepository {
     );
   }
 
-  async updateLastActivity(userId) {
-    return await this.model.findOneAndUpdate(
-      { user_id: userId },
-      { $set: { last_activity: new Date() } },
-      { new: true }
-    );
+  /**
+   * Count total users in the system
+   * Used for aggregated metrics
+   */
+  async count() {
+    return await this.model.countDocuments();
   }
 }

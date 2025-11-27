@@ -14,19 +14,44 @@ export class ProcessedImageRepository {
   async findByUserId(userId, filters = {}) {
     const query = { user_id: userId };
 
+    // Status filter - default to all statuses if not specified
     if (filters.status) {
       query.status = filters.status;
     }
-    if (filters.style) {
+
+    // Style filter - 'all' means no filter
+    if (filters.style && filters.style !== 'all') {
       query.style = filters.style;
+    }
+
+    // Project filter - 'all' means no filter
+    if (filters.projectId && filters.projectId !== 'all') {
+      query.project_name = filters.projectId;
+    }
+
+    // Visibility filter - 'all' means no filter
+    if (filters.visibility && filters.visibility !== 'all') {
+      query.visibility = filters.visibility;
     }
 
     const page = filters.page || 1;
     const limit = filters.limit || 12;
     const skip = (page - 1) * limit;
 
+    // Sort options
+    let sortOptions = {};
+    switch (filters.sortBy) {
+      case 'oldest':
+        sortOptions = { created_at: 1 };
+        break;
+      case 'newest':
+      default:
+        sortOptions = { processed_at: -1, created_at: -1 };
+        break;
+    }
+
     const [images, totalItems] = await Promise.all([
-      this.model.find(query).sort({ processed_at: -1, created_at: -1 }).skip(skip).limit(limit),
+      this.model.find(query).sort(sortOptions).skip(skip).limit(limit),
       this.model.countDocuments(query),
     ]);
 
@@ -163,5 +188,13 @@ export class ProcessedImageRepository {
         hasPreviousPage: page > 1,
       },
     };
+  }
+
+  /**
+   * Count total images in the system
+   * Used for aggregated metrics
+   */
+  async count() {
+    return await this.model.countDocuments();
   }
 }

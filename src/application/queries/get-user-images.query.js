@@ -1,6 +1,6 @@
 export class GetUserImagesQuery {
-  constructor(userId, options = {}) {
+  constructor(userId, filters = {}) {
     this.userId = userId;
-    this.options = options; // { page, limit, style, sortBy, projectId, visibility }
+    this.filters = filters; // { page, limit, style, sortBy, projectId, visibility }
   }
 }

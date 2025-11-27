@@ -154,8 +154,8 @@ export class ImageQueryController {
       }
 
       const query = new GetUserImagesQuery(userProfile.user_id, {
-        page: parseInt(page) || 1,
-        limit: parseInt(limit) || 12,
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
         style,
         sortBy,
         projectId,
