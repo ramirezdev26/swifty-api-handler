@@ -7,6 +7,12 @@ import {
   logMongoOperationComplete,
   logSyncIssue,
 } from '../event-handler-logger.js';
+import {
+  eventHandlerDuration,
+  eventHandlerExecutions,
+  eventHandlerErrors,
+} from '../../metrics/event-handlers.metrics.js';
+import { readModelLag, readModelFreshness } from '../../metrics/sync.metrics.js';
 
 export class ImageUploadedEventHandler {
   constructor(processedImageRepository, userProfileRepository, imageStatsRepository) {
@@ -18,13 +24,34 @@ export class ImageUploadedEventHandler {
   async handle(event) {
     const eventLogger = createEventLogger('ImageUploaded', event);
     const startTime = Date.now();
-    const { imageId, userId, originalUrl, style, size, userEmail, userName } = event.data;
+    const handlerName = 'ImageUploadedEventHandler';
 
     try {
       logEventReceived(eventLogger, 'ImageUploaded', event);
 
+      const { imageId, userId, originalUrl, style, size, userEmail, userName } =
+        event.data || event;
+
+      // Calcular lag CQRS si el evento incluye timestamp
+      if (event.timestamp || event.createdAt) {
+        const eventTimestamp = new Date(event.timestamp || event.createdAt).getTime();
+        const lag = (Date.now() - eventTimestamp) / 1000;
+        readModelLag.observe({ event_type: 'ImageUploaded' }, lag);
+
+        if (lag > 5) {
+          eventLogger.warn(
+            {
+              event: 'sync.high_lag',
+              eventType: 'ImageUploaded',
+              lag: lag,
+            },
+            `High sync lag detected: ${lag}s`
+          );
+        }
+      }
+
       // 1. Create processed image view
-      logMongoOperation(eventLogger, 'create', 'processed_images', { userId, imageId });
+      logMongoOperation(eventLogger, 'create', 'processed_images', { imageId, userId });
 
       const imageStartTime = Date.now();
       await this.processedImageRepository.create({
@@ -33,19 +60,20 @@ export class ImageUploadedEventHandler {
         user_email: userEmail,
         user_name: userName,
         original_url: originalUrl,
-        style: style,
-        size: size,
+        style,
+        size,
         status: 'processing',
         created_at: new Date(),
+        updated_at: new Date(),
       });
 
       logMongoOperationComplete(eventLogger, 'create', 'processed_images', {
-        userId,
         imageId,
+        userId,
         duration: Date.now() - imageStartTime,
       });
 
-      // 2. Update user profile stats
+      // 2. Update user profile
       logMongoOperation(eventLogger, 'increment', 'user_profiles', { userId });
 
       const profileStartTime = Date.now();
@@ -88,6 +116,14 @@ export class ImageUploadedEventHandler {
         duration: Date.now() - statsStartTime,
       });
 
+      // Métricas de éxito
+      const duration = (Date.now() - startTime) / 1000;
+      eventHandlerDuration.observe({ handler_name: handlerName }, duration);
+      eventHandlerExecutions.inc({ handler_name: handlerName, status: 'success' });
+
+      // Actualizar freshness
+      readModelFreshness.set({ event_type: 'ImageUploaded' }, Date.now() / 1000);
+
       logEventProcessed(eventLogger, 'ImageUploaded', {
         userId,
         imageId,
@@ -95,6 +131,13 @@ export class ImageUploadedEventHandler {
         duration: Date.now() - startTime,
       });
     } catch (error) {
+      // Métricas de error
+      eventHandlerExecutions.inc({ handler_name: handlerName, status: 'error' });
+      eventHandlerErrors.inc({
+        handler_name: handlerName,
+        error_type: error.constructor.name,
+      });
+
       logEventFailed(eventLogger, 'ImageUploaded', error);
       throw error; // Re-throw to trigger event requeue
     }
